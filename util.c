@@ -306,7 +306,10 @@ igroup(Blk *b, Ins *i, Ins **i0, Ins **i1)
 int
 argcls(Ins *i, int n)
 {
-	return optab[i->op].argcls[n][i->cls];
+	int k = optab[i->op].argcls[n][i->cls];
+	if (k == Km)
+		return Kp;
+	return k;
 }
 
 void

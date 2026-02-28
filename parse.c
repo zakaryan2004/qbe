@@ -851,7 +851,7 @@ typecheck(Fn *fn)
 		}
 		for (i=b->ins; i<&b->ins[b->nins]; i++)
 			for (n=0; n<2; n++) {
-				k = optab[i->op].argcls[n][i->cls];
+				k = argcls(i, n);
 				r = i->arg[n];
 				t = &fn->tmp[r.val];
 				if (k == Ke)
