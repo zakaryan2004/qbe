@@ -45,6 +45,7 @@ struct Target {
 	char name[16];
 	char apple;
 	char windows;
+	int ptrsz;  /* pointer size in bytes (4 or 8) */
 	int gpr0;   /* first general purpose reg */
 	int ngpr;
 	int fpr0;   /* first floating point reg */
@@ -65,6 +66,9 @@ struct Target {
 	char assym[4];
 	uint cansel:1;
 };
+
+/* Kp: pointer class: Kw on 32-bit, Kl on 64-bit */
+#define Kp (T.ptrsz == 4 ? Kw : Kl)
 
 #define BIT(n) ((bits)1 << (n))
 

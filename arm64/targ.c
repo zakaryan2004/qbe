@@ -26,6 +26,7 @@ arm64_memargs(int op)
 }
 
 #define ARM64_COMMON \
+	.ptrsz = 8, \
 	.gpr0 = R0, \
 	.ngpr = NGPR, \
 	.fpr0 = V0, \
