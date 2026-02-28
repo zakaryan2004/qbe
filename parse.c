@@ -11,7 +11,6 @@ enum {
 	K0,
 
 	Ke = -2, /* erroneous mode */
-	Km = Kl, /* memory pointer */
 };
 
 Op optab[NOp] = {

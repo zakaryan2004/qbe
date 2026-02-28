@@ -214,7 +214,8 @@ enum {
 	Kw,
 	Kl,
 	Ks,
-	Kd
+	Kd,
+	Km, /* memory pointer: determined on runtime (32-bit: Kw, 64-bit: Kl) */
 };
 
 #define KWIDE(k) ((k)&1)
