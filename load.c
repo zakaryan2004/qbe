@@ -95,12 +95,12 @@ cast(Ref *r, int cls, Loc *l)
 	if (KWIDE(cls0) < KWIDE(cls)) {
 		if (cls0 == Ks)
 			*r = iins(Kw, Ocast, *r, R, l);
-		*r = iins(Kl, Oextuw, *r, R, l);
+		*r = iins(Kp, Oextuw, *r, R, l);
 		if (cls == Kd)
 			*r = iins(Kd, Ocast, *r, R, l);
 	} else {
 		if (cls0 == Kd && cls != Kl)
-			*r = iins(Kl, Ocast, *r, R, l);
+			*r = iins(Kp, Ocast, *r, R, l);
 		if (cls0 != Kd || cls != Kw)
 			*r = iins(cls, Ocast, *r, R, l);
 	}
@@ -148,7 +148,7 @@ load(Slice sl, bits msk, Loc *l)
 			if (!a->offset)
 				break;
 			r1 = getcon(a->offset, curf);
-			r = iins(Kl, Oadd, r, r1, l);
+			r = iins(Kp, Oadd, r, r1, l);
 			break;
 		case ACon:
 		case ASym:
