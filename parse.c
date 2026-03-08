@@ -527,7 +527,7 @@ parserefl(int arg)
 			hasenv = 1;
 			env = 1;
 			next();
-			k = Kl;
+			k = Kp;
 			break;
 		default:
 			env = 0;
@@ -546,9 +546,9 @@ parserefl(int arg)
 				*curi = (Ins){Opare, k, r, {R}};
 		else if (k == Kc)
 			if (arg)
-				*curi = (Ins){Oargc, Kl, R, {TYPE(ty), r}};
+				*curi = (Ins){Oargc, Kp, R, {TYPE(ty), r}};
 			else
-				*curi = (Ins){Oparc, Kl, r, {TYPE(ty)}};
+				*curi = (Ins){Oparc, Kp, r, {TYPE(ty)}};
 		else if (k >= Ksb)
 			if (arg)
 				*curi = (Ins){Oargsb+(k-Ksb), Kw, R, {r}};
@@ -707,7 +707,7 @@ parseline(PState ps)
 		op = Ocall;
 		expect(Tnl);
 		if (k == Kc) {
-			k = Kl;
+			k = Kp;
 			arg[1] = TYPE(ty);
 		}
 		if (k >= Ksb)
@@ -875,7 +875,7 @@ typecheck(Fn *fn)
 		r = b->jmp.arg;
 		if (isret(b->jmp.type)) {
 			if (b->jmp.type == Jretc)
-				k = Kl;
+				k = Kp;
 			else if (b->jmp.type >= Jretsb)
 				k = Kw;
 			else
@@ -911,9 +911,11 @@ parsefn(Lnk *lnk)
 	curf->con = vnew(curf->ncon, sizeof curf->con[0], PFn);
 	for (i=0; i<Tmp0; ++i)
 		if (T.fpr0 <= i && i < T.fpr0 + T.nfpr)
+			// TODO: are we using 64-bit (SSE2) fp regs or 32-bit (x87)
+			// registers for implementing 32-bit x86 target?
 			newtmp(0, Kd, curf);
 		else
-			newtmp(0, Kl, curf);
+			newtmp(0, Kp, curf);
 	curf->con[0].type = CBits;
 	curf->con[0].bits.i = 0xdeaddead;  /* UNDEF */
 	curf->con[1].type = CBits;
