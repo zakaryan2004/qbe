@@ -131,11 +131,11 @@ fixarg(Ref *r, int k, Ins *i, Fn *fn)
 			emit(Oadd, Kl, r1, r2, r3);
 		} else
 			r2 = r1;
-		emit(Ocopy, Kl, r2, TMP(RAX), R);
+		emit(Ocopy, Kl, r2, TMP(EAX), R);
 		r2 = newtmp("isel", Kl, fn);
 		r3 = newtmp("isel", Kl, fn);
 		emit(Ocall, 0, R, r3, CALL(17));
-		emit(Ocopy, Kl, TMP(RDI), r2, R);
+		emit(Ocopy, Kl, TMP(EDI), r2, R);
 		emit(Oload, Kl, r3, r2, R);
 		cc = *c;
 		cc.bits.i = 0;
@@ -274,9 +274,9 @@ sel(Ins i, Num *tn, Fn *fn)
 		if (KBASE(k) == 1)
 			goto Emit;
 		if (i.op == Odiv || i.op == Oudiv)
-			r0 = TMP(RAX), r1 = TMP(RDX);
+			r0 = TMP(EAX), r1 = TMP(EDX);
 		else
-			r0 = TMP(RDX), r1 = TMP(RAX);
+			r0 = TMP(EDX), r1 = TMP(EAX);
 		emit(Ocopy, k, i.to, r0, R);
 		emit(Ocopy, k, R, r1, R);
 		if (rtype(i.arg[1]) == RCon) {
@@ -291,12 +291,12 @@ sel(Ins i, Num *tn, Fn *fn)
 				fn->tmp[r0.val].name, optab[i.op].name);
 		if (i.op == Odiv || i.op == Orem) {
 			emit(Oxidiv, k, R, r0, R);
-			emit(Osign, k, TMP(RDX), TMP(RAX), R);
+			emit(Osign, k, TMP(EDX), TMP(EAX), R);
 		} else {
 			emit(Oxdiv, k, R, r0, R);
-			emit(Ocopy, k, TMP(RDX), CON_Z, R);
+			emit(Ocopy, k, TMP(EDX), CON_Z, R);
 		}
-		emit(Ocopy, k, TMP(RAX), i.arg[0], R);
+		emit(Ocopy, k, TMP(EAX), i.arg[0], R);
 		fixarg(&curi->arg[0], k, curi, fn);
 		if (rtype(i.arg[1]) == RCon)
 			emit(Ocopy, k, r0, i.arg[1], R);
@@ -310,11 +310,11 @@ sel(Ins i, Num *tn, Fn *fn)
 		if (fn->tmp[r0.val].slot != -1)
 			err("unlikely argument %%%s in %s",
 				fn->tmp[r0.val].name, optab[i.op].name);
-		i.arg[1] = TMP(RCX);
-		emit(Ocopy, Kw, R, TMP(RCX), R);
+		i.arg[1] = TMP(ECX);
+		emit(Ocopy, Kw, R, TMP(ECX), R);
 		emiti(i);
 		i1 = curi;
-		emit(Ocopy, Kw, TMP(RCX), r0, R);
+		emit(Ocopy, Kw, TMP(ECX), r0, R);
 		fixarg(&i1->arg[0], argcls(&i, 0), i1, fn);
 		break;
 	case Ouwtof:
@@ -499,9 +499,9 @@ flagi(Ins *i0, Ins *i)
 {
 	while (i>i0) {
 		i--;
-		if (amd64_op[i->op].zflag)
+		if (i386_op[i->op].zflag)
 			return i;
-		if (amd64_op[i->op].lflag)
+		if (i386_op[i->op].lflag)
 			continue;
 		return 0;
 	}
@@ -878,7 +878,7 @@ amatch(Addr *a, Num *tn, Ref r, Fn *fn)
  * requires use counts (as given by parsing)
  */
 void
-amd64_isel(Fn *fn)
+i386_isel(Fn *fn)
 {
 	Blk *b, **sb;
 	Ins *i;
