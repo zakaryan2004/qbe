@@ -94,7 +94,7 @@ typclass(AClass *a, Typ *t)
 static int
 retr(Ref reg[2], AClass *aret)
 {
-	static int retreg[2][2] = {{RAX, RDX}, {XMM0, XMM0+1}};
+	static int retreg[2][2] = {{EAX, EDX}, {XMM0, XMM0+1}};
 	int n, k, ca, nr[2];
 
 	nr[0] = nr[1] = 0;
@@ -126,7 +126,7 @@ selret(Blk *b, Fn *fn)
 		typclass(&aret, &typ[fn->retty]);
 		if (aret.inmem) {
 			assert(rtype(fn->retr) == RTmp);
-			emit(Ocopy, Kl, TMP(RAX), fn->retr, R);
+			emit(Ocopy, Kl, TMP(EAX), fn->retr, R);
 			emit(Oblit1, 0, R, INT(aret.type->size), R);
 			emit(Oblit0, 0, R, r0, fn->retr);
 			ca = 1;
@@ -142,7 +142,7 @@ selret(Blk *b, Fn *fn)
 	} else {
 		k = j - Jretw;
 		if (KBASE(k) == 0) {
-			emit(Ocopy, k, TMP(RAX), r0, R);
+			emit(Ocopy, k, TMP(EAX), r0, R);
 			ca = 1;
 		} else {
 			emit(Ocopy, k, TMP(XMM0), r0, R);
@@ -220,16 +220,15 @@ argsclass(Ins *i0, Ins *i1, AClass *ac, int op, AClass *aret, Ref *env)
 	return ((varc|envc) << 12) | ((6-nint) << 4) | ((8-nsse) << 8);
 }
 
-int amd64_sysv_rsave[] = {
-	RDI, RSI, RDX, RCX, R8, R9, R10, R11, RAX,
-	XMM0, XMM1, XMM2, XMM3, XMM4, XMM5, XMM6, XMM7,
-	XMM8, XMM9, XMM10, XMM11, XMM12, XMM13, XMM14, -1
+int i386_sysv_rsave[] = {
+	EAX, ECX, EDX,
+	XMM0, XMM1, XMM2, XMM3, XMM4, XMM5, XMM6, -1
 };
-int amd64_sysv_rclob[] = {RBX, R12, R13, R14, R15, -1};
+int i386_sysv_rclob[] = {EBX, ESI, EDI, -1};
 
 MAKESURE(sysv_arrays_ok,
-	sizeof amd64_sysv_rsave == (NGPS_SYSV+NFPS+1) * sizeof(int) &&
-	sizeof amd64_sysv_rclob == (NCLR_SYSV+1) * sizeof(int)
+	sizeof i386_sysv_rsave == (NGPS+NFPS+1) * sizeof(int) &&
+	sizeof i386_sysv_rclob == (NCLR+1) * sizeof(int)
 );
 
 /* layout of call's second argument (RCall)
@@ -240,11 +239,11 @@ MAKESURE(sysv_arrays_ok,
  *          |    |    |  ` sse regs returned   (0..2)
  *          |    |    ` gp regs passed         (0..6)
  *          |    ` sse regs passed             (0..8)
- *          ` 1 if rax is used to pass data    (0..1)
+ *          ` 1 if eax is used to pass data    (0..1)
  */
 
 bits
-amd64_sysv_retregs(Ref r, int p[2])
+i386_sysv_retregs(Ref r, int p[2])
 {
 	bits b;
 	int ni, nf;
@@ -254,9 +253,9 @@ amd64_sysv_retregs(Ref r, int p[2])
 	ni = r.val & 3;
 	nf = (r.val >> 2) & 3;
 	if (ni >= 1)
-		b |= BIT(RAX);
+		b |= BIT(EAX);
 	if (ni >= 2)
-		b |= BIT(RDX);
+		b |= BIT(EDX);
 	if (nf >= 1)
 		b |= BIT(XMM0);
 	if (nf >= 2)
@@ -269,7 +268,7 @@ amd64_sysv_retregs(Ref r, int p[2])
 }
 
 bits
-amd64_sysv_argregs(Ref r, int p[2])
+i386_sysv_argregs(Ref r, int p[2])
 {
 	bits b;
 	int j, ni, nf, ra;
@@ -280,21 +279,21 @@ amd64_sysv_argregs(Ref r, int p[2])
 	nf = (r.val >> 8) & 15;
 	ra = (r.val >> 12) & 1;
 	for (j=0; j<ni; j++)
-		b |= BIT(amd64_sysv_rsave[j]);
+		b |= BIT(i386_sysv_rsave[j]);
 	for (j=0; j<nf; j++)
 		b |= BIT(XMM0+j);
 	if (p) {
 		p[0] = ni + ra;
 		p[1] = nf;
 	}
-	return b | (ra ? BIT(RAX) : 0);
+	return b | (ra ? BIT(EAX) : 0);
 }
 
 static Ref
 rarg(int ty, int *ni, int *ns)
 {
 	if (KBASE(ty) == 0)
-		return TMP(amd64_sysv_rsave[(*ni)++]);
+		return TMP(i386_sysv_rsave[(*ni)++]);
 	else
 		return TMP(XMM0 + (*ns)++);
 }
@@ -338,7 +337,7 @@ selcall(Fn *fn, Ins *i0, Ins *i1, RAlloc **rap)
 			/* get the return location from eax
 			 * it saves one callee-save reg */
 			r1 = newtmp("abi", Kl, fn);
-			emit(Ocopy, Kl, i1->to, TMP(RAX), R);
+			emit(Ocopy, Kl, i1->to, TMP(EAX), R);
 			ca += 1;
 		} else {
 			/* todo, may read out of bounds.
@@ -369,7 +368,7 @@ selcall(Fn *fn, Ins *i0, Ins *i1, RAlloc **rap)
 	} else {
 		ra = 0;
 		if (KBASE(i1->cls) == 0) {
-			emit(Ocopy, i1->cls, i1->to, TMP(RAX), R);
+			emit(Ocopy, i1->cls, i1->to, TMP(EAX), R);
 			ca += 1;
 		} else {
 			emit(Ocopy, i1->cls, i1->to, TMP(XMM0), R);
@@ -380,9 +379,9 @@ selcall(Fn *fn, Ins *i0, Ins *i1, RAlloc **rap)
 	emit(Ocall, i1->cls, R, i1->arg[0], CALL(ca));
 
 	if (!req(R, env))
-		emit(Ocopy, Kl, TMP(RAX), env, R);
+		emit(Ocopy, Kl, TMP(EAX), env, R);
 	else if ((ca >> 12) & 1) /* vararg call */
-		emit(Ocopy, Kw, TMP(RAX), getcon((ca >> 8) & 15, fn), R);
+		emit(Ocopy, Kw, TMP(EAX), getcon((ca >> 8) & 15, fn), R);
 
 	ni = ns = 0;
 	if (ra && aret.inmem)
@@ -443,7 +442,7 @@ selpar(Fn *fn, Ins *i0, Ins *i1)
 		fa = argsclass(i0, i1, ac, Opar, &aret, &env);
 	} else
 		fa = argsclass(i0, i1, ac, Opar, 0, &env);
-	fn->reg = amd64_sysv_argregs(CALL(fa), 0);
+	fn->reg = i386_sysv_argregs(CALL(fa), 0);
 
 	for (i=i0, a=ac; i<i1; i++, a++) {
 		if (i->op != Oparc || a->inmem)
@@ -496,7 +495,7 @@ selpar(Fn *fn, Ins *i0, Ins *i1)
 	}
 
 	if (!req(R, env))
-		emit(Ocopy, Kl, env, TMP(RAX), R);
+		emit(Ocopy, Kl, env, TMP(EAX), R);
 
 	return fa | (s*4)<<12;
 }
@@ -639,12 +638,12 @@ selvastart(Fn *fn, int fa, Ref ap)
 	r0 = newtmp("abi", Kl, fn);
 	r1 = newtmp("abi", Kl, fn);
 	emit(Ostorel, Kw, R, r1, r0);
-	emit(Oadd, Kl, r1, TMP(RBP), getcon(-176, fn));
+	emit(Oadd, Kl, r1, TMP(EBP), getcon(-176, fn));
 	emit(Oadd, Kl, r0, ap, getcon(16, fn));
 	r0 = newtmp("abi", Kl, fn);
 	r1 = newtmp("abi", Kl, fn);
 	emit(Ostorel, Kw, R, r1, r0);
-	emit(Oadd, Kl, r1, TMP(RBP), getcon(sp, fn));
+	emit(Oadd, Kl, r1, TMP(EBP), getcon(sp, fn));
 	emit(Oadd, Kl, r0, ap, getcon(8, fn));
 	r0 = newtmp("abi", Kl, fn);
 	emit(Ostorew, Kw, R, getcon(fp, fn), r0);
@@ -653,7 +652,7 @@ selvastart(Fn *fn, int fa, Ref ap)
 }
 
 void
-amd64_sysv_abi(Fn *fn)
+i386_sysv_abi(Fn *fn)
 {
 	Blk *b;
 	Ins *i, *i0;
