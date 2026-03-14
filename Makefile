@@ -10,7 +10,8 @@ COMMOBJ  = main.o util.o parse.o abi.o cfg.o mem.o ssa.o alias.o load.o \
 AMD64OBJ = amd64/targ.o amd64/sysv.o amd64/isel.o amd64/emit.o amd64/winabi.o
 ARM64OBJ = arm64/targ.o arm64/abi.o arm64/isel.o arm64/emit.o
 RV64OBJ  = rv64/targ.o rv64/abi.o rv64/isel.o rv64/emit.o
-OBJ      = $(COMMOBJ) $(AMD64OBJ) $(ARM64OBJ) $(RV64OBJ)
+I386OBJ  = i386/targ.o i386/sysv.o i386/isel.o i386/emit.o
+OBJ      = $(COMMOBJ) $(AMD64OBJ) $(ARM64OBJ) $(RV64OBJ) $(I386OBJ)
 
 SRCALL   = $(OBJ:.o=.c)
 
@@ -27,6 +28,7 @@ $(OBJ): all.h ops.h
 $(AMD64OBJ): amd64/all.h
 $(ARM64OBJ): arm64/all.h
 $(RV64OBJ): rv64/all.h
+$(I386OBJ): i386/all.h
 main.o: config.h
 
 config.h:
@@ -48,6 +50,9 @@ config.h:
 			;;                             \
 		*riscv64*)                             \
 			echo "#define Deftgt T_rv64";  \
+			;;                             \
+		*i386*)                                \
+			echo "#define Deftgt T_i386_sysv"; \
 			;;                             \
 		*)                                     \
 			echo "#define Deftgt T_amd64_sysv";\
@@ -83,6 +88,9 @@ check-rv64: qbe
 
 check-amd64_win: qbe
 	TARGET=amd64_win tools/test.sh all
+
+check-i386: qbe
+	TARGET=i386 tools/test.sh all
 
 src:
 	@echo $(SRCALL)
