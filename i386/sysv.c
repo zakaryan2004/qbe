@@ -48,7 +48,7 @@ static void
 selret(Blk *b, Fn *fn)
 {
 	int j, k, ca;
-	Ref r, r0, reg[2];
+	Ref r0;
 	AClass aret;
 
 	j = b->jmp.type;
@@ -61,24 +61,15 @@ selret(Blk *b, Fn *fn)
 
 	if (j == Jretc) {
 		typclass(&aret, &typ[fn->retty]);
-		if (aret.inmem) {
-			assert(rtype(fn->retr) == RTmp);
-			emit(Ocopy, Kl, TMP(EAX), fn->retr, R);
-			emit(Oblit1, 0, R, INT(aret.type->size), R);
-			emit(Oblit0, 0, R, r0, fn->retr);
-			ca = 1;
-		} else {
-			ca = retr(reg, &aret);
-			if (aret.size > 8) {
-				r = newtmp("abi", Kl, fn);
-				emit(Oload, Kl, reg[1], r, R);
-				emit(Oadd, Kl, r, r0, getcon(8, fn));
-			}
-			emit(Oload, Kl, reg[0], r0, R);
-		}
+		assert(rtype(fn->retr) == RTmp);
+		emit(Ocopy, Kp, TMP(EAX), fn->retr, R);
+		emit(Oblit1, 0, R, INT(aret.type->size), R);
+		emit(Oblit0, 0, R, r0, fn->retr);
+		ca = 1;
 	} else {
 		k = j - Jretw;
 		if (KBASE(k) == 0) {
+			// TODO: Consider 64-bit return values here a bit more carefully
 			emit(Ocopy, k, TMP(EAX), r0, R);
 			ca = 1;
 		} else {
