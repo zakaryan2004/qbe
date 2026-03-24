@@ -20,36 +20,12 @@ struct RAlloc {
 static void
 typclass(AClass *a, Typ *t)
 {
-	uint sz, al;
-
-	sz = t->size;
-	al = 1u << t->align;
-
-	/* the ABI requires sizes to be rounded
-	 * up to the nearest multiple of 8, moreover
-	 * it makes it easy load and store structures
-	 * in registers
-	 */
-	if (al < 8)
-		al = 8;
-	sz = (sz + al-1) & -al;
-
 	a->type = t;
-	a->size = sz;
+	a->size = t->size;
 	a->align = t->align;
-
-	if (t->isdark || sz > 16 || sz == 0) {
-		/* large or unaligned structures are
-		 * required to be passed in memory
-		 */
-		a->inmem = 1;
-		return;
-	}
-
+	a->inmem = 1;
 	a->cls[0] = Kx;
 	a->cls[1] = Kx;
-	a->inmem = 0;
-	classify(a, t, 0);
 }
 
 static int
