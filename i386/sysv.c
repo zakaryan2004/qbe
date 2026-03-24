@@ -18,45 +18,6 @@ struct RAlloc {
 };
 
 static void
-classify(AClass *a, Typ *t, uint s)
-{
-	Field *f;
-	int *cls;
-	uint n, s1;
-
-	for (n=0, s1=s; n<t->nunion; n++, s=s1)
-		for (f=t->fields[n]; f->type!=FEnd; f++) {
-			assert(s <= 16);
-			cls = &a->cls[s/8];
-			switch (f->type) {
-			case FEnd:
-				die("unreachable");
-			case FPad:
-				/* don't change anything */
-				s += f->len;
-				break;
-			case Fs:
-			case Fd:
-				if (*cls == Kx)
-					*cls = Kd;
-				s += f->len;
-				break;
-			case Fb:
-			case Fh:
-			case Fw:
-			case Fl:
-				*cls = Kl;
-				s += f->len;
-				break;
-			case FTyp:
-				classify(a, &typ[f->len], s);
-				s += typ[f->len].size;
-				break;
-			}
-		}
-}
-
-static void
 typclass(AClass *a, Typ *t)
 {
 	uint sz, al;
