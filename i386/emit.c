@@ -470,10 +470,10 @@ emitins(Ins i, E *e)
 			);
 		break;
 	case Odiv:
-		/* use xmm15 to adjust the instruction when the
+		/* use xmm7 to adjust the instruction when the
 		 * conversion to 2-address in emitf() would fail */
 		if (req(i.to, i.arg[1])) {
-			i.arg[1] = TMP(XMM0+15);
+			i.arg[1] = TMP(XMM0+7);
 			emitf("mov%k %=, %1", &i, e);
 			emitf("mov%k %0, %=", &i, e);
 			i.arg[0] = i.to;
@@ -514,7 +514,7 @@ emitins(Ins i, E *e)
 		if (rtype(i.to) == RSlot
 		&& (t0 == RSlot || t0 == RMem)) {
 			i.cls = KWIDE(i.cls) ? Kd : Ks;
-			i.arg[1] = TMP(XMM0+15);
+			i.arg[1] = TMP(XMM0+7);
 			emitf("mov%k %0, %1", &i, e);
 			emitf("mov%k %1, %=", &i, e);
 			break;
@@ -574,11 +574,11 @@ emitins(Ins i, E *e)
 		if (KBASE(i.cls) == 0)
 			goto Table;
 		/* for floats, there is no swap instruction
-		 * so we use xmm15 as a temporary
+		 * so we use xmm7 as a temporary
 		 */
-		emitcopy(TMP(XMM0+15), i.arg[0], i.cls, e);
+		emitcopy(TMP(XMM0+7), i.arg[0], i.cls, e);
 		emitcopy(i.arg[0], i.arg[1], i.cls, e);
-		emitcopy(i.arg[1], TMP(XMM0+15), i.cls, e);
+		emitcopy(i.arg[1], TMP(XMM0+7), i.cls, e);
 		break;
 	case Odbgloc:
 		emitdbgloc(i.arg[0].val, i.arg[1].val, e->f);
