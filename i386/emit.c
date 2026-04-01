@@ -146,10 +146,10 @@ static char *rname[][4] = {
 	[EBX] = {"ebx", "ebx", "bx", "bl"},
 	[ECX] = {"ecx", "ecx", "cx", "cl"},
 	[EDX] = {"edx", "edx", "dx", "dl"},
-	[ESI] = {"esi", "esi", "si", "sil"},
-	[EDI] = {"edi", "edi", "di", "dil"},
-	[EBP] = {"ebp", "ebp", "bp", "bpl"},
-	[ESP] = {"esp", "esp", "sp", "spl"},
+	[ESI] = {"esi", "esi", "si", "TODO_NO_8BIT_SI"},
+	[EDI] = {"edi", "edi", "di", "TODO_NO_8BIT_DI"},
+	[EBP] = {"ebp", "ebp", "bp", "TODO_NO_8BIT_BP"},
+	[ESP] = {"esp", "esp", "sp", "TODO_NO_8BIT_SP"},
 };
 
 
