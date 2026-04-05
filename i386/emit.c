@@ -108,7 +108,7 @@ static struct {
 	{ Ostosi,   Ki, "cvttss2si%k %0, %=" },
 	{ Odtosi,   Ki, "cvttsd2si%k %0, %=" },
 	{ Oswtof,   Ka, "cvtsi2%k %W0, %=" },
-	{ Osltof,   Ka, "cvtsi2%k %L0, %=" },
+	{ Osltof,   Ka, "TODO_Osltof" },
 	{ Ocast,    Ki, "TODO_Ocast_Ki" },
 	{ Ocast,    Ka, "TODO_Ocast_Ka" },
 
