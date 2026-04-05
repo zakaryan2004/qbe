@@ -160,16 +160,19 @@ slot(Ref r, E *e)
 
 	s = rsval(r);
 	assert(s <= e->fn->slot);
-	/* specific to NAlign == 3 */
+	/* specific to NAlign == 2 */
 	if (s < 0) {
 		if (e->fp == ESP)
-			return 4*-s - 8 + e->fsz + e->nclob*8;
+			return 4*-s - 4 + e->fsz + e->nclob*4;
 		else
 			return 4*-s;
 	}
 	else if (e->fp == ESP)
-		return 4*s + e->nclob*8;
+		return 4*s + e->nclob*4;
 	else if (e->fn->vararg) {
+		// TODO: for i386 SysV maybe we don't need to reserve space for register spilling
+		// since all arguments are passed on the stack.
+		// This is not tested and may be wrong.
 		if (T.windows)
 			return -4 * (e->fn->slot - s);
 		else
