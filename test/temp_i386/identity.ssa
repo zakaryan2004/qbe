@@ -1,0 +1,4 @@
+export function w $id(w %x) {
+@start
+    ret %x
+}

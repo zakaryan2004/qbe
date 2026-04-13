@@ -1,0 +1,6 @@
+export function w $add_three(w %a, w %b, w %c) {
+@start
+    %sum1 =w add %a, %b
+    %sum2 =w add %sum1, %c
+    ret %sum2
+}

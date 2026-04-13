@@ -1,0 +1,6 @@
+function w $main(w %a, w %b) {
+@start
+	%c =w add %a, %b
+	%d =w sub %c, 12
+	ret %d
+}
