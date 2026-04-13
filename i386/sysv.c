@@ -81,6 +81,7 @@ selret(Blk *b, Fn *fn)
 	b->jmp.arg = CALL(ca);
 }
 
+// TODO: Handle large struct returns on stack somewhere (about aret)
 static int
 argsclass(Ins *i0, Ins *i1, AClass *ac, int op, AClass *aret, Ref *env)
 {
@@ -88,11 +89,9 @@ argsclass(Ins *i0, Ins *i1, AClass *ac, int op, AClass *aret, Ref *env)
 	AClass *a;
 	Ins *i;
 
-	if (aret && aret->inmem)
-		nint = 5; /* hidden argument */
-	else
-		nint = 6;
-	nsse = 8;
+	// i386 System V ABI passes all arguments on the stack
+	nint = 0;
+	nsse = 0;
 	varc = 0;
 	envc = 0;
 	for (i=i0, a=ac; i<i1; i++, a++)
