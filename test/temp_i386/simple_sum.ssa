@@ -1,6 +1,20 @@
-function w $main(w %a, w %b) {
+export function w $sum(w %a, w %b) {
 @start
 	%c =w add %a, %b
 	%d =w sub %c, 12
 	ret %d
 }
+
+# >>> driver
+# #include <stdio.h>
+# extern int sum(int a, int b);
+# int main() {
+#     int a = 26, b = 684;
+#     printf("%d + %d - 12 = %d\n", a, b, sum(a, b));
+#     return 0;
+# }
+# <<<
+
+# >>> output
+# 26 + 684 - 12 = 698
+# <<<

@@ -4,3 +4,18 @@ export function w $add_three(w %a, w %b, w %c) {
     %sum2 =w add %sum1, %c
     ret %sum2
 }
+
+# >>> driver
+# #include <stdio.h>
+# extern int add_three(int x, int y, int z);
+# int main() {
+#     int a = 26, b = 684, c = 368;
+#     int sum = add_three(a, b, c);
+#     printf("The sum of %d, %d, and %d is %d\n", a, b, c, sum);
+#     return 0;
+# }
+# <<<
+
+# >>> output
+# The sum of 26, 684, and 368 is 1078
+# <<<

@@ -2,3 +2,17 @@ export function w $id(w %x) {
 @start
     ret %x
 }
+
+# >>> driver
+# #include <stdio.h>
+# extern int id(int x);
+# int main() {
+#     int a = 26, b = 684, c = 368;
+#     printf("%d %d %d\n", id(a), id(b), id(c));
+#     return 0;
+# }
+# <<<
+
+# >>> output
+# 26 684 368
+# <<<

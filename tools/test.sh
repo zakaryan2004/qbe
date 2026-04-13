@@ -25,16 +25,25 @@ find_cc_and_qemu() {
 	if [ -n "$cc" ]; then
 		return
 	fi
-	target="$1"
+	targets="$1" # space-separated list of compatible host architectures
 	candidate_cc="$2"
+
 	if $candidate_cc -v >/dev/null 2>&1; then
 		cc=$candidate_cc
 		echo "cc: $cc"
 
-		if [ "$target" = "$(uname -m)" ]
-		then
+		host_arch=$(uname -m)
+		is_native=0
+		for t in $targets; do
+			if [ "$t" = "$host_arch" ]; then
+				is_native=1
+				break
+			fi
+		done
+
+		if [ "$is_native" -eq 1 ]; then
 			qemu=qemu_not_needed
-			echo "qemu: not needed, testing native architecture"
+			echo "qemu: not needed (native compatible architecture: $host_arch)"
 		else
 			qemu="$3"
 			if $qemu -version >/dev/null 2>&1
@@ -63,7 +72,7 @@ init() {
 	arm64)
 		for p in aarch64-linux-musl aarch64-linux-gnu
 		do
-			find_cc_and_qemu aarch64 "$p-gcc -no-pie -static" "qemu-aarch64"
+			find_cc_and_qemu "aarch64" "$p-gcc -no-pie -static" "qemu-aarch64"
 		done
 		if test -z "$cc" -o -z "$qemu"
 		then
@@ -75,11 +84,11 @@ init() {
 	rv64)
 		for p in riscv64-linux-musl riscv64-linux-gnu
 		do
-			find_cc_and_qemu riscv64 "$p-gcc -no-pie -static" "qemu-riscv64"
+			find_cc_and_qemu "riscv64" "$p-gcc -no-pie -static" "qemu-riscv64"
 		done
 		if test -z "$cc" -o -z "$qemu"
 		then
-			echo "Cannot find riscv64 compiler or qemu."
+			echo "Cannot find "riscv64" compiler or qemu."
 			exit 77
 		fi
 		bin="$bin -t rv64"
@@ -87,7 +96,7 @@ init() {
 	x86_64)
 		for p in x86_64-linux-musl x86_64-linux-gnu
 		do
-			find_cc_and_qemu x86_64 "$p-gcc -no-pie -static" "qemu-x86_64"
+			find_cc_and_qemu "x86_64" "$p-gcc -no-pie -static" "qemu-x86_64"
 		done
 		if test -z "$cc" -o -z "$qemu"
 		then
@@ -95,6 +104,20 @@ init() {
 			exit 77
 		fi
 		bin="$bin -t amd64_sysv"
+		;;
+	i386)
+        for p in i686-linux-musl i686-linux-gnu i386-linux-gnu; do
+            find_cc_and_qemu "i386 i686 x86_64" "$p-gcc -no-pie -static" "qemu-i386"
+        done
+
+        find_cc_and_qemu "i386 i686 x86_64" "gcc -m32 -no-pie -static" "qemu-i386"
+
+		if test -z "$cc" -o -z "$qemu"
+		then
+			echo "Cannot find i386 compiler or qemu."
+			exit 77
+		fi
+		bin="$bin -t i386_sysv"
 		;;
 	amd64_win)
 		for p in x86_64-w64-mingw32
