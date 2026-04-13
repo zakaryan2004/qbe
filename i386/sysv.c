@@ -375,7 +375,7 @@ selpar(Fn *fn, Ins *i0, Ins *i1)
 		fn->retr = r;
 	}
 
-	for (i=i0, a=ac, s=4; i<i1; i++, a++) {
+	for (i=i0, a=ac, s=2; i<i1; i++, a++) {
 		switch (a->inmem) {
 		case 1:
 			if (a->align > 4)
@@ -387,7 +387,7 @@ selpar(Fn *fn, Ins *i0, Ins *i1)
 			continue;
 		case 2:
 			emit(Oload, i->cls, i->to, SLOT(-s), R);
-			s += 2;
+			s += a->size / 4;
 			continue;
 		}
 		if (i->op == Opare)
