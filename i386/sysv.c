@@ -85,47 +85,32 @@ selret(Blk *b, Fn *fn)
 static int
 argsclass(Ins *i0, Ins *i1, AClass *ac, int op, AClass *aret, Ref *env)
 {
-	int varc, envc, nint, ni, nsse, ns, n, *pn;
+	int varc, envc, n;
 	AClass *a;
 	Ins *i;
 
 	// i386 System V ABI passes all arguments on the stack
-	nint = 0;
-	nsse = 0;
 	varc = 0;
 	envc = 0;
 	for (i=i0, a=ac; i<i1; i++, a++)
 		switch (i->op - op + Oarg) {
 		case Oarg:
-			if (KBASE(i->cls) == 0)
-				pn = &nint;
-			else
-				pn = &nsse;
-			if (*pn > 0) {
-				--*pn;
-				a->inmem = 0;
-			} else
-				a->inmem = 2;
-			a->align = 3;
-			a->size = 8;
+			a->inmem = 2;
 			a->cls[0] = i->cls;
+
+			if (KWIDE(i->cls)) {
+				a->size = 8;
+				a->align = 3;
+			}
+			else {
+				a->size = 4;
+				a->align = 2;
+			}
 			break;
 		case Oargc:
 			n = i->arg[0].val;
 			typclass(a, &typ[n]);
-			if (a->inmem)
-				continue;
-			ni = ns = 0;
-			for (n=0; (uint)n*8<a->size; n++)
-				if (KBASE(a->cls[n]) == 0)
-					ni++;
-				else
-					ns++;
-			if (nint >= ni && nsse >= ns) {
-				nint -= ni;
-				nsse -= ns;
-			} else
-				a->inmem = 1;
+			a->inmem = 1;
 			break;
 		case Oarge:
 			envc = 1;
@@ -144,7 +129,7 @@ argsclass(Ins *i0, Ins *i1, AClass *ac, int op, AClass *aret, Ref *env)
 	if (varc && envc)
 		err("sysv abi does not support variadic env calls");
 
-	return ((varc|envc) << 12) | ((6-nint) << 4) | ((8-nsse) << 8);
+	return ((varc|envc) << 12);
 }
 
 int i386_sysv_rsave[] = {
