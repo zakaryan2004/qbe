@@ -522,8 +522,6 @@ emitins(Ins i, E *e)
 			emitf("mov%k %1, %=", &i, e);
 			break;
 		}
-		/* conveniently, the assembler knows if it
-		 * should use movabsq when reading movq */
 		emitf("mov%k %0, %=", &i, e);
 		break;
 	case Oaddr:
@@ -535,7 +533,7 @@ emitins(Ins i, E *e)
 			assert(isreg(i.to));
 			con = &e->fn->con[i.arg[0].val];
 			sym = str(con->sym.id);
-			emitf("movq %%fs:0, %L=", &i, e);
+			emitf("movl %%fs:0, %L=", &i, e);
 			fprintf(e->f, "\tleaq %s%s@tpoff",
 				sym[0] == '"' ? "" : T.assym, sym);
 			if (con->bits.i)
@@ -552,12 +550,12 @@ emitins(Ins i, E *e)
 		 * assembly... */
 		switch (rtype(i.arg[0])) {
 		case RCon:
-			fprintf(e->f, "\tcallq ");
+			fprintf(e->f, "\tcall ");
 			emitcon(&e->fn->con[i.arg[0].val], e);
 			fprintf(e->f, "\n");
 			break;
 		case RTmp:
-			emitf("callq *%L0", &i, e);
+			emitf("call *%W0", &i, e);
 			break;
 		default:
 			die("invalid call argument");
@@ -569,9 +567,9 @@ emitins(Ins i, E *e)
 		 * instructions depending on the result
 		 */
 		assert(e->fp == EBP);
-		emitf("subq %L0, %%esp", &i, e);
+		emitf("subl %W0, %%esp", &i, e);
 		if (!req(i.to, R))
-			emitcopy(i.to, TMP(ESP), Kl, e);
+			emitcopy(i.to, TMP(ESP), Kw, e);
 		break;
 	case Oswap:
 		if (KBASE(i.cls) == 0)
@@ -636,26 +634,27 @@ i386_sysv_emitfn(Fn *fn, FILE *f)
 
 	e = &(E){.f = f, .fn = fn};
 	emitfnlnk(fn->name, &fn->lnk, f);
-	fputs("\tendbr64\n", f);
+	fputs("\tendbr32\n", f);
 	if (!fn->leaf || fn->vararg || fn->dynalloc) {
 		e->fp = EBP;
-		fputs("\tpushq %ebp\n\tmovq %esp, %ebp\n", f);
+		fputs("\tpushl %ebp\n\tmovl %esp, %ebp\n", f);
 	} else
 		e->fp = ESP;
 	sysv_framesz(e);
 	if (e->fsz)
-		fprintf(f, "\tsubq $%"PRIu64", %%esp\n", e->fsz);
+		fprintf(f, "\tsubl $%"PRIu64", %%esp\n", e->fsz);
 	if (fn->vararg) {
+		// TODO: varargs in i386 SysV work differently, this needs to be fixed
 		o = -176;
 		for (r=i386_sysv_rsave; r<&i386_sysv_rsave[6]; r++, o+=8)
-			fprintf(f, "\tmovq %%%s, %d(%%ebp)\n", rname[*r][0], o);
+			fprintf(f, "\tmovl %%%s, %d(%%ebp)\n", rname[*r][0], o);
 		for (n=0; n<8; ++n, o+=16)
 			fprintf(f, "\tmovaps %%xmm%d, %d(%%ebp)\n", n, o);
 	}
 	for (r=i386_sysv_rclob; r<&i386_sysv_rclob[NCLR]; r++)
 		if (fn->reg & BIT(*r)) {
 			itmp.arg[0] = TMP(*r);
-			emitf("pushq %L0", &itmp, e);
+			emitf("pushl %L0", &itmp, e);
 			e->nclob++;
 		}
 
@@ -678,19 +677,19 @@ i386_sysv_emitfn(Fn *fn, FILE *f)
 		case Jret0:
 			if (fn->dynalloc)
 				fprintf(f,
-					"\tmovq %%ebp, %%esp\n"
-					"\tsubq $%"PRIu64", %%esp\n",
-					e->fsz + e->nclob * 8);
+					"\tmovl %%ebp, %%esp\n"
+					"\tsubl $%"PRIu64", %%esp\n",
+					e->fsz + e->nclob * 4);
 			for (r=&i386_sysv_rclob[NCLR]; r>i386_sysv_rclob;)
 				if (fn->reg & BIT(*--r)) {
 					itmp.arg[0] = TMP(*r);
-					emitf("popq %L0", &itmp, e);
+					emitf("popl %L0", &itmp, e);
 				}
 			if (e->fp == EBP)
 				fputs("\tleave\n", f);
 			else if (e->fsz)
 				fprintf(f,
-					"\taddq $%"PRIu64", %%esp\n",
+					"\taddl $%"PRIu64", %%esp\n",
 					e->fsz);
 			fputs("\tret\n", f);
 			break;
