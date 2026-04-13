@@ -182,23 +182,20 @@ i386_sysv_retregs(Ref r, int p[2])
 bits
 i386_sysv_argregs(Ref r, int p[2])
 {
-	bits b;
-	int j, ni, nf, ra;
+	int ra;
 
 	assert(rtype(r) == RCall);
-	b = 0;
-	ni = (r.val >> 4) & 15;
-	nf = (r.val >> 8) & 15;
-	ra = (r.val >> 12) & 1;
-	for (j=0; j<ni; j++)
-		b |= BIT(i386_sysv_rsave[j]);
-	for (j=0; j<nf; j++)
-		b |= BIT(XMM0+j);
+	ra = (r.val >> 12) & 1; // hidden pointer return flag for large stacks
+
 	if (p) {
-		p[0] = ni + ra;
-		p[1] = nf;
-	}
-	return b | (ra ? BIT(EAX) : 0);
+        p[0] = ra;
+        p[1] = 0;
+    }
+
+	// In i386 SysV no registers are used for argument passing.
+	// The only exception is the hidden pointer for large struct returns,
+	// which is passed in EAX.
+	return ra ? BIT(EAX) : 0;
 }
 
 static Ref
