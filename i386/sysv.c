@@ -110,6 +110,7 @@ argsclass(Ins *i0, Ins *i1, AClass *ac, int op, AClass *aret, Ref *env)
 		case Oargc:
 			n = i->arg[0].val;
 			typclass(a, &typ[n]);
+			a->size = (a->size + 3) & -4;
 			a->inmem = 1;
 			break;
 		case Oarge:
