@@ -230,16 +230,12 @@ selcall(Fn *fn, Ins *i0, Ins *i1, RAlloc **rap)
 
 	for (stk=0, a=&ac[i1-i0]; a>ac;)
 		if ((--a)->inmem) {
-			if (a->align > 4)
-				err("sysv abi requires alignments of 16 or less");
 			stk += a->size;
-			if (a->align == 4)
-				stk += stk & 15;
 		}
-	stk += stk & 15;
+	stk = (stk + 15) & -16;
 	if (stk) {
 		r = getcon(-(int64_t)stk, fn);
-		emit(Osalloc, Kl, R, r, R);
+		emit(Osalloc, Kw, R, r, R);
 	}
 
 	if (!req(i1->arg[1], R)) {
