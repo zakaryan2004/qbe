@@ -265,7 +265,7 @@ selcall(Fn *fn, Ins *i0, Ins *i1, RAlloc **rap)
 	emit(Ocall, i1->cls, R, i1->arg[0], CALL(ca));
 
 	if (!req(R, env))
-		emit(Ocopy, Kl, TMP(EAX), env, R);
+		emit(Ocopy, Kw, TMP(EAX), env, R);
 	else if ((ca >> 12) & 1) /* vararg call */
 		emit(Ocopy, Kw, TMP(EAX), getcon((ca >> 8) & 15, fn), R);
 
@@ -292,22 +292,24 @@ selcall(Fn *fn, Ins *i0, Ins *i1, RAlloc **rap)
 	if (!stk)
 		return;
 
-	r = newtmp("abi", Kl, fn);
+	r = newtmp("abi", Kw, fn);
 	for (i=i0, a=ac, off=0; i<i1; i++, a++) {
 		if (i->op >= Oarge || !a->inmem)
 			continue;
-		r1 = newtmp("abi", Kl, fn);
+		r1 = newtmp("abi", Kw, fn);
 		if (i->op == Oargc) {
-			if (a->align == 4)
-				off += off & 15;
 			emit(Oblit1, 0, R, INT(a->type->size), R);
 			emit(Oblit0, 0, R, i->arg[1], r1);
-		} else
-			emit(Ostorel, 0, R, i->arg[0], r1);
-		emit(Oadd, Kl, r1, r, getcon(off, fn));
+		} else {
+			if (KWIDE(i->cls))
+                die("64-bit arguments not yet implemented for i386");
+			int st = (i->cls == Ks) ? Ostores : Ostorew;
+			emit(st, 0, R, i->arg[0], r1);
+		}
+		emit(Oadd, Kw, r1, r, getcon(off, fn));
 		off += a->size;
 	}
-	emit(Osalloc, Kl, r, getcon(stk, fn), R);
+	emit(Osalloc, Kw, r, getcon(stk, fn), R);
 }
 
 static int
@@ -366,7 +368,7 @@ selpar(Fn *fn, Ins *i0, Ins *i1)
 	}
 
 	if (!req(R, env))
-		emit(Ocopy, Kl, env, TMP(EAX), R);
+		emit(Ocopy, Kw, env, TMP(EAX), R);
 
 	return fa | (s*4)<<12;
 }
