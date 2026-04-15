@@ -330,25 +330,10 @@ selpar(Fn *fn, Ins *i0, Ins *i1)
 		fa = argsclass(i0, i1, ac, Opar, 0, &env);
 	fn->reg = i386_sysv_argregs(CALL(fa), 0);
 
-	for (i=i0, a=ac; i<i1; i++, a++) {
-		if (i->op != Oparc || a->inmem)
-			continue;
-		if (a->size > 8) {
-			r = newtmp("abi", Kl, fn);
-			a->ref[1] = newtmp("abi", Kl, fn);
-			emit(Ostorel, 0, R, a->ref[1], r);
-			emit(Oadd, Kl, r, i->to, getcon(8, fn));
-		}
-		a->ref[0] = newtmp("abi", Kl, fn);
-		emit(Ostorel, 0, R, a->ref[0], i->to);
-		/* specific to NAlign == 3 */
-		al = a->align >= 2 ? a->align - 2 : 0;
-		emit(Oalloc+al, Kl, i->to, getcon(a->size, fn), R);
-	}
 
 	if (fn->retty >= 0 && aret.inmem) {
-		r = newtmp("abi", Kl, fn);
-		emit(Ocopy, Kl, r, rarg(Kl, &ni, &ns), R);
+		r = newtmp("abi", Kw, fn);
+		emit(Ocopy, Kw, r, rarg(Kw, &ni, &ns), R);
 		fn->retr = r;
 	}
 
