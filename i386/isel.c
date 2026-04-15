@@ -118,7 +118,7 @@ fixarg(Ref *r, int k, Ins *i, Fn *fn)
 		 * instruction
 		 */
 		r1 = newtmp("isel", Kl, fn);
-		emit(Oaddr, Kl, r1, SLOT(s), R);
+		emit(Oaddr, Kw, r1, SLOT(s), R);
 	}
 	else if (T.apple && hascon(r0, &c, fn)
 	&& c->type == CAddr && c->sym.type == SThr) {
