@@ -242,31 +242,11 @@ selcall(Fn *fn, Ins *i0, Ins *i1, RAlloc **rap)
 	}
 
 	if (!req(i1->arg[1], R)) {
-		if (aret.inmem) {
-			/* get the return location from eax
-			 * it saves one callee-save reg */
-			r1 = newtmp("abi", Kl, fn);
-			emit(Ocopy, Kl, i1->to, TMP(EAX), R);
-			ca += 1;
-		} else {
-			/* todo, may read out of bounds.
-			 * gcc did this up until 5.2, but
-			 * this should still be fixed.
-			 */
-			if (aret.size > 8) {
-				r = newtmp("abi", Kl, fn);
-				aret.ref[1] = newtmp("abi", aret.cls[1], fn);
-				emit(Ostorel, 0, R, aret.ref[1], r);
-				emit(Oadd, Kl, r, i1->to, getcon(8, fn));
-			}
-			aret.ref[0] = newtmp("abi", aret.cls[0], fn);
-			emit(Ostorel, 0, R, aret.ref[0], i1->to);
-			ca += retr(reg, &aret);
-			if (aret.size > 8)
-				emit(Ocopy, aret.cls[1], aret.ref[1], reg[1], R);
-			emit(Ocopy, aret.cls[0], aret.ref[0], reg[0], R);
-			r1 = i1->to;
-		}
+		/* get the return location from eax
+		 * it saves one callee-save reg */
+		r1 = newtmp("abi", Kw, fn);
+		emit(Ocopy, Kw, i1->to, TMP(EAX), R);
+		ca += 1;
 		/* allocate return pad */
 		ra = alloc(sizeof *ra);
 		/* specific to NAlign == 3 */
