@@ -1,16 +1,32 @@
 #include "all.h"
 
+typedef struct Blt { int st, ld, cls, size; } Blt;
+
 static void
 blit(Ref sd[2], int sz, Fn *fn)
 {
-	struct { int st, ld, cls, size; } *p, tbl[] = {
+	Blt tbl32[] = {
+		/* 32-bit max chunk size is 4 bytes */
+		{ Ostorew, Oload,   Kw, 4 },
+		{ Ostoreh, Oloaduh, Kw, 2 },
+		{ Ostoreb, Oloadub, Kw, 1 }
+	};
+	Blt tbl64[] = {
 		{ Ostorel, Oload,   Kl, 8 },
 		{ Ostorew, Oload,   Kw, 4 },
 		{ Ostoreh, Oloaduh, Kw, 2 },
 		{ Ostoreb, Oloadub, Kw, 1 }
 	};
+	Blt *p, *tbl;
 	Ref r, r1, ro;
 	int off, fwd, n;
+
+	/* pick table depending on ptr width (Kw on 32-bit, Kl on 64-bit) */
+	if (KWIDE(Kp)) {
+		tbl = tbl64;
+	} else {
+		tbl = tbl32;
+	}
 
 	fwd = sz >= 0;
 	sz = abs(sz);
@@ -18,14 +34,14 @@ blit(Ref sd[2], int sz, Fn *fn)
 	for (p=tbl; sz; p++)
 		for (n=p->size; sz>=n; sz-=n) {
 			off -= fwd ? n : 0;
-			r = newtmp("blt", Kl, fn);
-			r1 = newtmp("blt", Kl, fn);
+			r = newtmp("blt", p->cls, fn);
+			r1 = newtmp("blt", Kp, fn);
 			ro = getcon(off, fn);
 			emit(p->st, 0, R, r, r1);
-			emit(Oadd, Kl, r1, sd[1], ro);
-			r1 = newtmp("blt", Kl, fn);
+			emit(Oadd, Kp, r1, sd[1], ro);
+			r1 = newtmp("blt", Kp, fn);
 			emit(p->ld, p->cls, r, r1, R);
-			emit(Oadd, Kl, r1, sd[0], ro);
+			emit(Oadd, Kp, r1, sd[0], ro);
 			off += fwd ? 0 : n;
 		}
 }
