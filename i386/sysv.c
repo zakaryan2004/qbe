@@ -442,6 +442,7 @@ chpred(Blk *b, Blk *bp, Blk *bp1)
 static void
 selvaarg(Fn *fn, Blk *b, Ins *i)
 {
+	die("TODO: i386 varargs not implemented yet");
 	Ref loc, lreg, lstk, nr, r0, r1, c4, c8, c16, c, ap;
 	Blk *b0, *bstk, *breg;
 	int isint;
@@ -538,6 +539,7 @@ selvaarg(Fn *fn, Blk *b, Ins *i)
 static void
 selvastart(Fn *fn, int fa, Ref ap)
 {
+	die("TODO: i386 varargs not implemented yet");
 	Ref r0, r1;
 	int gp, fp, sp;
 
