@@ -213,28 +213,31 @@ selcall(Fn *fn, Ins *i0, Ins *i1, RAlloc **rap)
 {
 	Ins *i;
 	AClass *ac, *a, aret;
-	int ca, ni, ns, al;
+	int ca, al, hidden = 0;
 	uint stk, off;
-	Ref r, r1, r2, reg[2], env;
+	Ref r, r1, r2, env;
 	RAlloc *ra;
 
 	env = R;
 	ac = alloc((i1-i0) * sizeof ac[0]);
+	hidden = 0;
 
 	if (!req(i1->arg[1], R)) {
 		assert(rtype(i1->arg[1]) == RType);
 		typclass(&aret, &typ[i1->arg[1].val]);
 		ca = argsclass(i0, i1, ac, Oarg, &aret, &env);
+		if (aret.inmem) hidden = 4;
 	} else
 		ca = argsclass(i0, i1, ac, Oarg, 0, &env);
 
-	for (stk=0, a=&ac[i1-i0]; a>ac;)
+	for (stk=hidden, a=&ac[i1-i0]; a>ac;)
 		if ((--a)->inmem) {
 			stk += a->size;
 		}
 	stk = (stk + 15) & -16;
 	if (stk) {
-		r = getcon(-(int64_t)stk, fn);
+		// callee pops the 4-byte hidden pointer
+		r = getcon(-(int64_t)(stk - hidden), fn);
 		emit(Osalloc, Kw, R, r, R);
 	}
 
@@ -246,9 +249,9 @@ selcall(Fn *fn, Ins *i0, Ins *i1, RAlloc **rap)
 		ca += 1;
 		/* allocate return pad */
 		ra = alloc(sizeof *ra);
-		/* specific to NAlign == 3 */
+		/* specific to NAlign == 2 */
 		al = aret.align >= 2 ? aret.align - 2 : 0;
-		ra->i = (Ins){Oalloc+al, Kl, r1, {getcon(aret.size, fn)}};
+		ra->i = (Ins){Oalloc+al, Kw, r1, {getcon(aret.size, fn)}};
 		ra->link = (*rap);
 		*rap = ra;
 	} else {
@@ -269,31 +272,12 @@ selcall(Fn *fn, Ins *i0, Ins *i1, RAlloc **rap)
 	else if ((ca >> 12) & 1) /* vararg call */
 		emit(Ocopy, Kw, TMP(EAX), getcon((ca >> 8) & 15, fn), R);
 
-	ni = ns = 0;
-	if (ra && aret.inmem)
-		emit(Ocopy, Kl, rarg(Kl, &ni, &ns), ra->i.to, R); /* pass hidden argument */
-
-	for (i=i0, a=ac; i<i1; i++, a++) {
-		if (i->op >= Oarge || a->inmem)
-			continue;
-		r1 = rarg(a->cls[0], &ni, &ns);
-		if (i->op == Oargc) {
-			if (a->size > 8) {
-				r2 = rarg(a->cls[1], &ni, &ns);
-				r = newtmp("abi", Kl, fn);
-				emit(Oload, a->cls[1], r2, r, R);
-				emit(Oadd, Kl, r, i->arg[1], getcon(8, fn));
-			}
-			emit(Oload, a->cls[0], r1, i->arg[1], R);
-		} else
-			emit(Ocopy, i->cls, r1, i->arg[0], R);
-	}
 
 	if (!stk)
 		return;
 
 	r = newtmp("abi", Kw, fn);
-	for (i=i0, a=ac, off=0; i<i1; i++, a++) {
+	for (i=i0, a=ac, off=hidden; i<i1; i++, a++) {
 		if (i->op >= Oarge || !a->inmem)
 			continue;
 		r1 = newtmp("abi", Kw, fn);
@@ -309,6 +293,10 @@ selcall(Fn *fn, Ins *i0, Ins *i1, RAlloc **rap)
 		emit(Oadd, Kw, r1, r, getcon(off, fn));
 		off += a->size;
 	}
+
+	// push the hidden pointer to the top of the stack
+	if (hidden) emit(Ostorew, 0, R, ra->i.to, r);
+
 	emit(Osalloc, Kw, r, getcon(stk, fn), R);
 }
 
@@ -317,9 +305,10 @@ selpar(Fn *fn, Ins *i0, Ins *i1)
 {
 	AClass *ac, *a, aret;
 	Ins *i;
-	int ni, ns, s, al, fa;
+	int ni, ns, s, fa;
 	Ref r, env;
 
+	s = 2;
 	env = R;
 	ac = alloc((i1-i0) * sizeof ac[0]);
 	curi = &insb[NIns];
@@ -332,14 +321,14 @@ selpar(Fn *fn, Ins *i0, Ins *i1)
 		fa = argsclass(i0, i1, ac, Opar, 0, &env);
 	fn->reg = i386_sysv_argregs(CALL(fa), 0);
 
-
 	if (fn->retty >= 0 && aret.inmem) {
 		r = newtmp("abi", Kw, fn);
-		emit(Ocopy, Kw, r, rarg(Kw, &ni, &ns), R);
+		emit(Oload, Kw, r, SLOT(-s), R);
 		fn->retr = r;
+		s = 3;
 	}
 
-	for (i=i0, a=ac, s=2; i<i1; i++, a++) {
+	for (i=i0, a=ac; i<i1; i++, a++) {
 		switch (a->inmem) {
 		case 1:
 			if (a->align > 4)
@@ -356,15 +345,6 @@ selpar(Fn *fn, Ins *i0, Ins *i1)
 		}
 		if (i->op == Opare)
 			continue;
-		r = rarg(a->cls[0], &ni, &ns);
-		if (i->op == Oparc) {
-			emit(Ocopy, a->cls[0], a->ref[0], r, R);
-			if (a->size > 8) {
-				r = rarg(a->cls[1], &ni, &ns);
-				emit(Ocopy, a->cls[1], a->ref[1], r, R);
-			}
-		} else
-			emit(Ocopy, i->cls, i->to, r, R);
 	}
 
 	if (!req(R, env))

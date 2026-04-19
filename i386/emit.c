@@ -691,6 +691,18 @@ i386_sysv_emitfn(Fn *fn, FILE *f)
 				fprintf(f,
 					"\taddl $%"PRIu64", %%esp\n",
 					e->fsz);
+			
+			// If the return type (retty) is positive, then this is an aggregate type.
+			// In this case, the callee must pop the 4-byte hidden pointer from the stack
+			// using "ret $4" instead of the usual "ret".
+            if (e->fn->retty >= 0) {
+				// Make sure that the struct actually uses memory (isn't an empty struct)
+                if (typ[e->fn->retty].align != 0 || typ[e->fn->retty].isdark) {
+                    fputs("\tret $4\n", f);
+                    break;
+                }
+            }
+
 			fputs("\tret\n", f);
 			break;
 		case Jjmp:
