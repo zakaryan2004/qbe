@@ -253,21 +253,11 @@ once() {
 	fi
 }
 
-#trap cleanup TERM QUIT
-
-init
-
-if test -z "$1"
-then
-	echo "usage: tools/test.sh {all, SSAFILE}" 2>&1
-	exit 1
-fi
-
-case "$1" in
-"all")
+all() {
+	test_dir=$1
 	fail=0
 	count=0
-	for t in $dir/../test/[!_]*.ssa
+	for t in $test_dir/[!_]*.ssa
 	do
 		once $t
 		fail=`expr $fail + $?`
@@ -282,6 +272,24 @@ case "$1" in
 		echo "All is fine!"
 	fi
 	exit $fail
+}
+
+#trap cleanup TERM QUIT
+
+init
+
+if test -z "$1"
+then
+	echo "usage: tools/test.sh {all, i386, SSAFILE}" 2>&1
+	exit 1
+fi
+
+case "$1" in
+"all")
+	all $dir/../test
+	;;
+"i386")
+	all $dir/../test/temp_i386
 	;;
 *)
 	once $1

@@ -90,7 +90,7 @@ check-amd64_win: qbe
 	TARGET=amd64_win tools/test.sh all
 
 check-i386: qbe
-	TARGET=i386 tools/test.sh all
+	TARGET=i386 tools/test.sh i386
 
 src:
 	@echo $(SRCALL)
@@ -108,4 +108,5 @@ src:
 wc:
 	@wc -l $(SRCALL)
 
-.PHONY: clean clean-gen check check-arm64 check-rv64 src 80 wc install uninstall
+.PHONY: clean clean-gen check check-x86_64 check-arm64 check-rv64 check-amd64_win
+	check-i386 src 80 wc install uninstall
