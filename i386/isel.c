@@ -155,8 +155,8 @@ fixarg(Ref *r, int k, Ins *i, Fn *fn)
 		 * absolute addressing, use a rip-
 		 * relative leaq instead
 		 */
-		r1 = newtmp("isel", Kl, fn);
-		emit(Oaddr, Kl, r1, r0, R);
+		r1 = newtmp("isel", Kw, fn);
+		emit(Oaddr, Kw, r1, r0, R);
 	}
 	else if (rtype(r0) == RMem) {
 		/* eliminate memory operands of
