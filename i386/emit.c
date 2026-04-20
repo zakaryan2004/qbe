@@ -325,19 +325,20 @@ Next:
 			}
 			if (m->offset.type != CUndef)
 				emitcon(&m->offset, e);
-			fputc('(', e->f);
-			if (!req(m->base, R))
-				fprintf(e->f, "%%%s",
-					regtoa(m->base.val, SLong)
-				);
-			else if (m->offset.type == CAddr)
-				fprintf(e->f, "%%rip");
-			if (!req(m->index, R))
-				fprintf(e->f, ", %%%s, %d",
-					regtoa(m->index.val, SLong),
-					m->scale
-				);
-			fputc(')', e->f);
+			// TODO: RIP-relative addressing used to go here
+			if (!req(m->base, R) || !req(m->index, R)) {
+				fputc('(', e->f);
+				if (!req(m->base, R))
+					fprintf(e->f, "%%%s",
+						regtoa(m->base.val, SLong)
+					);
+				if (!req(m->index, R))
+					fprintf(e->f, ", %%%s, %d",
+						regtoa(m->index.val, SLong),
+						m->scale
+					);
+				fputc(')', e->f);
+			}
 			break;
 		case RCon:
 			fputc('$', e->f);
@@ -374,9 +375,7 @@ Next:
 		case RCon:
 			off = e->fn->con[ref.val];
 			emitcon(&off, e);
-			if (off.type == CAddr)
-			if (off.sym.type != SThr || T.apple)
-				fprintf(e->f, "(%%rip)");
+			// TODO: RIP-relative addressing used to go here
 			break;
 		case RTmp:
 			assert(isreg(ref));
@@ -464,8 +463,9 @@ emitins(Ins i, E *e)
 		if (KBASE(i.cls) == 0)
 			emitf("neg%k %=", &i, e);
 		else
+			// TODO: RIP-relative addressing used to be in XORP
 			fprintf(e->f,
-				"\txorp%c %sfp%d(%%rip), %%%s\n",
+				"\txorp%c %sfp%d, %%%s\n",
 				"xxsd"[i.cls],
 				T.asloc,
 				stashbits(negmask[i.cls], 16),
