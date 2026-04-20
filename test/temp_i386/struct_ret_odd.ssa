@@ -1,0 +1,33 @@
+type :odd = { w, b }
+
+function :odd $make_odd(w %x, w %y) {
+@start
+    %p =w alloc4 5
+    storew %x, %p
+    %p4 =w add %p, 4
+    storeb %y, %p4
+    ret %p
+}
+
+export function w $test() {
+@start
+    %v =:odd call $make_odd(w 77, w 99)
+    
+    # Extract the 1-byte char at offset 4
+    %p4 =w add %v, 4
+    %val =w loadub %p4
+    ret %val
+}
+
+# >>> driver
+# #include <stdio.h>
+# extern int test();
+# int main() {
+#     printf("Result: %d\n", test());
+#     return 0;
+# }
+# <<<
+
+# >>> output
+# Result: 99
+# <<<

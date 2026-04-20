@@ -1,0 +1,18 @@
+export function s $test_s(s %x) {
+@start
+    %res =s add %x, s_1.5
+    ret %res
+}
+
+# >>> driver
+# #include <stdio.h>
+# extern float test_s(float);
+# int main() {
+#     printf("Result: %.2f\n", test_s(2.0f));
+#     return 0;
+# }
+# <<<
+
+# >>> output
+# Result: 3.50
+# <<<

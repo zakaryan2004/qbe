@@ -1,0 +1,31 @@
+type :pair = { w }
+
+export function w $add_struct(:pair %p1) {
+@start
+    %a1 =w loadw %p1
+
+    ret %a1
+}
+
+export function w $test() {
+@start
+    %p1 =w alloc4 4
+    storew 10, %p1
+
+    %val =w loadw %p1
+
+    ret %val
+}
+
+# >>> driver
+# #include <stdio.h>
+# extern int test();
+# int main() {
+#     printf("Result: %d\n", test());
+#     return 0;
+# }
+# <<<
+
+# >>> output
+# Result: 10
+# <<<

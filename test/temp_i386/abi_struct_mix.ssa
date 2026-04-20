@@ -1,0 +1,63 @@
+type :pair = { w, w }
+
+function :pair $add_pairs(:pair %p1, :pair %p2) {
+@start
+    # Read p1 (a1, b1)
+    %a1 =w loadw %p1
+    %p1_4 =w add %p1, 4
+    %b1 =w loadw %p1_4
+
+    # Read p2 (a2, b2)
+    %a2 =w loadw %p2
+    %p2_4 =w add %p2, 4
+    %b2 =w loadw %p2_4
+
+    # Math
+    %suma =w add %a1, %a2
+    %sumb =w add %b1, %b2
+
+    # Create return struct
+    %res =w alloc4 8
+    storew %suma, %res
+    %res_4 =w add %res, 4
+    storew %sumb, %res_4
+
+    ret %res
+}
+
+export function w $test() {
+@start
+    # Construct p1 = { 10, 20 }
+    %p1 =w alloc4 8
+    storew 10, %p1
+    %p1_4 =w add %p1, 4
+    storew 20, %p1_4
+    
+    # Construct p2 = { 100, 200 }
+    %p2 =w alloc4 8
+    storew 100, %p2
+    %p2_4 =w add %p2, 4
+    storew 200, %p2_4
+    
+    # Call function (returns { 110, 220 })
+    %v =:pair call $add_pairs(:pair %p1, :pair %p2)
+    
+    # Extract the second element (should be 220)
+    %v_4 =w add %v, 4
+    %val =w loadw %v_4
+    
+    ret %val
+}
+
+# >>> driver
+# #include <stdio.h>
+# extern int test();
+# int main() {
+#     printf("Result: %d\n", test());
+#     return 0;
+# }
+# <<<
+
+# >>> output
+# Result: 220
+# <<<

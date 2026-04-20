@@ -1,0 +1,44 @@
+type :four = {w, b, w}
+
+data $z = { w 0 }
+
+export
+function $test() {
+@start
+	%a  =w loadw $z
+	%y  =w add %a, %a
+
+	%s  =w alloc4 12   # allocate a :four struct
+	%s1 =w add %s, 8  # get address of the w
+	storew 4, %s       # set the w
+	storew 5, %s1      # set the w
+
+	# only the last argument should be on the stack
+	%f  =w add $F, %y
+	%x  =w call %f(w %y, w 1, w 2, w 3, :four %s, w 6)
+
+	# store the result in the
+	# global variable a
+
+	%x1 =w add %y, %x
+	storew %x1, $a
+	ret
+}
+
+# >>> driver
+# #include <stdio.h>
+# struct four { int l; char c; int i; };
+# extern void test(void);
+# int F(int a0, int a1, int a2, int a3, struct four s, int a6) {
+# 	printf("%d %d %d %d %d %d %d\n",
+# 		a0, a1, a2, a3, s.l, s.i, a6);
+# 	return 42;
+# }
+# int a;
+# int main() { test(); printf("%d\n", a); return 0; }
+# <<<
+
+# >>> output
+# 0 1 2 3 4 5 6
+# 42
+# <<<

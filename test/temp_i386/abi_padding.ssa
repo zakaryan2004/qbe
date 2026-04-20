@@ -1,0 +1,35 @@
+type :mem = { b 17 }
+
+export
+function $test_bug() {
+@start
+    %m =l alloc4 17
+    storew 65, %m
+    
+    call $check(w 1, w 2, w 3, w 4, w 5, w 6, :mem %m, w 1234567890)
+    ret
+}
+
+
+# >>> driver
+# #include <stdio.h>
+# #include <stdint.h>
+# typedef struct { char t[17]; } mem;
+# extern void test_bug(void);
+# void check(int a, int b, int c, int d, int e, int f, mem m, uint32_t g) {
+#     printf("%d %d %d %d %d %d\n", a, b, c, d, e, f);
+#     printf("%s\n", m.t);
+#     printf("%d\n", g);
+# }
+# int main() {
+#     test_bug();
+#     return 0;
+# }
+# <<<
+
+# >>> output
+# 1 2 3 4 5 6
+# A
+# 1234567890
+# <<<
+

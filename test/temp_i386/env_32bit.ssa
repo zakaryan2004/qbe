@@ -1,0 +1,21 @@
+# sanity checks for env calls
+
+function w $epar(env %e, w %i) {
+@start
+	%x =w add %e, %i
+	ret %x
+}
+
+export function w $earg(w %a, w %b) {
+@start
+	%r1 =w call $epar(env %a, w %b)
+	# okay to call a regular function
+	# with an env argument
+	%r2 =w call $abs(env 113, w %r1)
+	ret %r2
+}
+
+# >>> driver
+# extern int earg(int, int);
+# int main(void) { return !(earg(2, -44) == 42); }
+# <<<
