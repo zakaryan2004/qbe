@@ -675,6 +675,23 @@ i386_sysv_emitfn(Fn *fn, FILE *f)
 			fprintf(f, "\tud2\n");
 			break;
 		case Jret0:
+			if (rtype(b->jmp.arg) == RCall) {
+				int retc[2];
+				i386_sysv_retregs(b->jmp.arg, retc);
+				if (retc[1] == 1) {
+					if (b->jmp.arg.val & (1 << 4)) {
+						fputs("\tsubl $8, %esp\n", f);
+						fputs("\tmovsd %xmm0, (%esp)\n", f);
+						fputs("\tfldl (%esp)\n", f);
+						fputs("\taddl $8, %esp\n", f);
+					} else {
+						fputs("\tsubl $4, %esp\n", f);
+						fputs("\tmovss %xmm0, (%esp)\n", f);
+						fputs("\tflds (%esp)\n", f);
+						fputs("\taddl $4, %esp\n", f);
+					}
+				}
+			}
 			if (fn->dynalloc)
 				fprintf(f,
 					"\tmovl %%ebp, %%esp\n"

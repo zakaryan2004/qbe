@@ -75,6 +75,8 @@ selret(Blk *b, Fn *fn)
 		} else {
 			emit(Ocopy, k, TMP(XMM0), r0, R);
 			ca = 1 << 2;
+			if (k == Kd)
+				ca |= 1 << 4; // marker for double width return
 		}
 	}
 

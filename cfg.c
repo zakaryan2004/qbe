@@ -337,6 +337,10 @@ simpljmp(Fn *fn)
 	for (b=fn->start; b; b=b->link) {
 		assert(!b->phi);
 		if (b->jmp.type == Jret0) {
+			if (req(ret->jmp.arg, R))
+				ret->jmp.arg = b->jmp.arg;
+			else
+				assert(req(ret->jmp.arg, b->jmp.arg) || req(b->jmp.arg, R));
 			b->jmp.type = Jjmp;
 			b->s1 = ret;
 		}
