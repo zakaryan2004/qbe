@@ -169,15 +169,7 @@ slot(Ref r, E *e)
 	}
 	else if (e->fp == ESP)
 		return 4*s + e->nclob*4;
-	else if (e->fn->vararg) {
-		// TODO: for i386 SysV maybe we don't need to reserve space for register spilling
-		// since all arguments are passed on the stack.
-		// This is not tested and may be wrong.
-		if (T.windows)
-			return -4 * (e->fn->slot - s);
-		else
-			return -176 + -4 * (e->fn->slot - s);
-	} else
+	else
 		return -4 * (e->fn->slot - s);
 }
 
@@ -614,7 +606,7 @@ sysv_framesz(E *e)
 	&& e->fp == ESP
 	&& e->fn->salign == 4)
 		f += 2;
-	e->fsz = 4*f + 8*o + 176*e->fn->vararg;
+	e->fsz = 4*f + 8*o;
 }
 
 void
@@ -628,7 +620,7 @@ i386_sysv_emitfn(Fn *fn, FILE *f)
 	static int id0;
 	Blk *b, *s;
 	Ins *i, itmp;
-	int *r, c, o, n, lbl;
+	int *r, c, lbl;
 	uint p;
 	E *e;
 
@@ -643,14 +635,6 @@ i386_sysv_emitfn(Fn *fn, FILE *f)
 	sysv_framesz(e);
 	if (e->fsz)
 		fprintf(f, "\tsubl $%"PRIu64", %%esp\n", e->fsz);
-	if (fn->vararg) {
-		// TODO: varargs in i386 SysV work differently, this needs to be fixed
-		o = -176;
-		for (r=i386_sysv_rsave; r<&i386_sysv_rsave[6]; r++, o+=8)
-			fprintf(f, "\tmovl %%%s, %d(%%ebp)\n", rname[*r][0], o);
-		for (n=0; n<8; ++n, o+=16)
-			fprintf(f, "\tmovaps %%xmm%d, %d(%%ebp)\n", n, o);
-	}
 	for (r=i386_sysv_rclob; r<&i386_sysv_rclob[NCLR]; r++)
 		if (fn->reg & BIT(*r)) {
 			itmp.arg[0] = TMP(*r);

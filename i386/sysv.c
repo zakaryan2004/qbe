@@ -132,7 +132,7 @@ argsclass(Ins *i0, Ins *i1, AClass *ac, int op, AClass *aret, Ref *env)
 	if (varc && envc)
 		err("sysv abi does not support variadic env calls");
 
-	return ((varc|envc) << 12);
+	return (envc << 12);
 }
 
 int i386_sysv_rsave[] = {
@@ -271,8 +271,6 @@ selcall(Fn *fn, Ins *i0, Ins *i1, RAlloc **rap)
 
 	if (!req(R, env))
 		emit(Ocopy, Kw, TMP(EAX), env, R);
-	else if ((ca >> 12) & 1) /* vararg call */
-		emit(Ocopy, Kw, TMP(EAX), getcon((ca >> 8) & 15, fn), R);
 
 
 	if (!stk)
@@ -388,124 +386,31 @@ chpred(Blk *b, Blk *bp, Blk *bp1)
 static void
 selvaarg(Fn *fn, Blk *b, Ins *i)
 {
-	die("TODO: i386 varargs not implemented yet");
-	Ref loc, lreg, lstk, nr, r0, r1, c4, c8, c16, c, ap;
-	Blk *b0, *bstk, *breg;
-	int isint;
+	Ref p, p1;
+	int sz;
 
-	c4 = getcon(4, fn);
-	c8 = getcon(8, fn);
-	c16 = getcon(16, fn);
-	ap = i->arg[0];
-	isint = KBASE(i->cls) == 0;
+	(void)b;
+	sz = KWIDE(i->cls) ? 8 : 4;
+	p = newtmp("abi", Kp, fn);
+	p1 = newtmp("abi", Kp, fn);
 
-	/* @b [...]
-	       r0 =l add ap, (0 or 4)
-	       nr =l loadsw r0
-	       r1 =w cultw nr, (48 or 176)
-	       jnz r1, @breg, @bstk
-	   @breg
-	       r0 =l add ap, 16
-	       r1 =l loadl r0
-	       lreg =l add r1, nr
-	       r0 =w add nr, (8 or 16)
-	       r1 =l add ap, (0 or 4)
-	       storew r0, r1
-	   @bstk
-	       r0 =l add ap, 8
-	       lstk =l loadl r0
-	       r1 =l add lstk, 8
-	       storel r1, r0
-	   @b0
-	       %loc =l phi @breg %lreg, @bstk %lstk
-	       i->to =(i->cls) load %loc
-	*/
-
-	loc = newtmp("abi", Kl, fn);
-	emit(Oload, i->cls, i->to, loc, R);
-	b0 = split(fn, b);
-	b0->jmp = b->jmp;
-	b0->s1 = b->s1;
-	b0->s2 = b->s2;
-	if (b->s1)
-		chpred(b->s1, b, b0);
-	if (b->s2 && b->s2 != b->s1)
-		chpred(b->s2, b, b0);
-
-	lreg = newtmp("abi", Kl, fn);
-	nr = newtmp("abi", Kl, fn);
-	r0 = newtmp("abi", Kw, fn);
-	r1 = newtmp("abi", Kl, fn);
-	emit(Ostorew, Kw, R, r0, r1);
-	emit(Oadd, Kl, r1, ap, isint ? CON_Z : c4);
-	emit(Oadd, Kw, r0, nr, isint ? c8 : c16);
-	r0 = newtmp("abi", Kl, fn);
-	r1 = newtmp("abi", Kl, fn);
-	emit(Oadd, Kl, lreg, r1, nr);
-	emit(Oload, Kl, r1, r0, R);
-	emit(Oadd, Kl, r0, ap, c16);
-	breg = split(fn, b);
-	breg->jmp.type = Jjmp;
-	breg->s1 = b0;
-
-	lstk = newtmp("abi", Kl, fn);
-	r0 = newtmp("abi", Kl, fn);
-	r1 = newtmp("abi", Kl, fn);
-	emit(Ostorel, Kw, R, r1, r0);
-	emit(Oadd, Kl, r1, lstk, c8);
-	emit(Oload, Kl, lstk, r0, R);
-	emit(Oadd, Kl, r0, ap, c8);
-	bstk = split(fn, b);
-	bstk->jmp.type = Jjmp;
-	bstk->s1 = b0;
-
-	b0->phi = alloc(sizeof *b0->phi);
-	*b0->phi = (Phi){
-		.cls = Kl, .to = loc,
-		.narg = 2,
-		.blk = vnew(2, sizeof b0->phi->blk[0], PFn),
-		.arg = vnew(2, sizeof b0->phi->arg[0], PFn),
-	};
-	b0->phi->blk[0] = bstk;
-	b0->phi->blk[1] = breg;
-	b0->phi->arg[0] = lstk;
-	b0->phi->arg[1] = lreg;
-	r0 = newtmp("abi", Kl, fn);
-	r1 = newtmp("abi", Kw, fn);
-	b->jmp.type = Jjnz;
-	b->jmp.arg = r1;
-	b->s1 = breg;
-	b->s2 = bstk;
-	c = getcon(isint ? 48 : 176, fn);
-	emit(Ocmpw+Ciult, Kw, r1, nr, c);
-	emit(Oloadsw, Kl, nr, r0, R);
-	emit(Oadd, Kl, r0, ap, isint ? CON_Z : c4);
+	// lowered backwards: load ap, load value, advance ap, store ap
+	emit(Ostorew, Kw, R, p1, i->arg[0]);
+	emit(Oadd, Kp, p1, p, getcon(sz, fn));
+	emit(Oload, i->cls, i->to, p, R);
+	emit(Oload, Kp, p, i->arg[0], R);
 }
 
 static void
 selvastart(Fn *fn, int fa, Ref ap)
 {
-	die("TODO: i386 varargs not implemented yet");
-	Ref r0, r1;
-	int gp, fp, sp;
+	Ref p;
+	int sp;
 
-	gp = ((fa >> 4) & 15) * 8;
-	fp = 48 + ((fa >> 8) & 15) * 16;
-	sp = fa >> 12;
-	r0 = newtmp("abi", Kl, fn);
-	r1 = newtmp("abi", Kl, fn);
-	emit(Ostorel, Kw, R, r1, r0);
-	emit(Oadd, Kl, r1, TMP(EBP), getcon(-176, fn));
-	emit(Oadd, Kl, r0, ap, getcon(16, fn));
-	r0 = newtmp("abi", Kl, fn);
-	r1 = newtmp("abi", Kl, fn);
-	emit(Ostorel, Kw, R, r1, r0);
-	emit(Oadd, Kl, r1, TMP(EBP), getcon(sp, fn));
-	emit(Oadd, Kl, r0, ap, getcon(8, fn));
-	r0 = newtmp("abi", Kl, fn);
-	emit(Ostorew, Kw, R, getcon(fp, fn), r0);
-	emit(Oadd, Kl, r0, ap, getcon(4, fn));
-	emit(Ostorew, Kw, R, getcon(gp, fn), ap);
+	sp = (fa >> 12) & -4;
+	p = newtmp("abi", Kp, fn);
+	emit(Ostorew, Kw, R, p, ap);
+	emit(Oadd, Kp, p, TMP(EBP), getcon(sp, fn));
 }
 
 void

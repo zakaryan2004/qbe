@@ -979,6 +979,7 @@ alignment required by all the targets.
     type :valist = align 8 { 8 }   # For amd64_win
     type :valist = align 8 { 32 }  # For arm64
     type :valist = align 8 { 8 }   # For rv64
+    type :valist = align 4 { 8 }   # For i386_sysv
 
 The following example defines a variadic function adding
 its first three arguments.
