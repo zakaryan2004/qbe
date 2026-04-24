@@ -285,9 +285,22 @@ selcall(Fn *fn, Ins *i0, Ins *i1, RAlloc **rap)
 			emit(Oblit1, 0, R, INT(a->type->size), R);
 			emit(Oblit0, 0, R, i->arg[1], r1);
 		} else {
-			if (KWIDE(i->cls))
-                die("64-bit arguments not yet implemented for i386");
-			int st = (i->cls == Ks) ? Ostores : Ostorew;
+			int st;
+			switch (i->cls) {
+				case Kw:
+					st = Ostorew;
+					break;
+				case Ks:
+					st = Ostores;
+					break;
+				case Kd:
+					st = Ostored;
+					break;
+				case Kl:
+					die("64-bit integer arguments not yet implemented for i386");
+				default:
+					die("invalid argument class in i386 selcall");
+			}
 			emit(st, 0, R, i->arg[0], r1);
 		}
 		emit(Oadd, Kw, r1, r, getcon(off, fn));
