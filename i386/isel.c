@@ -414,6 +414,14 @@ sel(Ins i, Num *tn, Fn *fn)
 				i.op = Ostorew;
 		}
 		seladdr(&i.arg[1], tn, fn);
+		if (i.op == Ostorel && rtype(i.arg[0]) == RCon) {
+			// the emitter handles 64-bit immediats stores directly
+			// without using fixarg on the source, since we
+			// don't have 64-bit registers
+			i1 = curi;
+			fixarg(&i1->arg[1], argcls(&i, 1), i1, fn);
+			break;
+		}
 		goto Emit;
 	case_Oload:
 		seladdr(&i.arg[0], tn, fn);

@@ -297,7 +297,8 @@ selcall(Fn *fn, Ins *i0, Ins *i1, RAlloc **rap)
 					st = Ostored;
 					break;
 				case Kl:
-					die("64-bit integer arguments not yet implemented for i386");
+					st = Ostorel;
+					break;
 				default:
 					die("invalid argument class in i386 selcall");
 			}

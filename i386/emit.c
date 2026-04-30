@@ -82,7 +82,6 @@ static struct {
 	{ Omul,     Ks, "+mulss %1, %=" },
 	{ Omul,     Kd, "+mulsd %1, %=" },
 	{ Odiv,     Ka, "-div%k %1, %=" },
-	{ Ostorel,  Ka, "TODO_Ostorel" },
 	{ Ostorew,  Ka, "movl %W0, %M1" },
 	{ Ostoreh,  Ka, "movw %H0, %M1" },
 	{ Ostoreb,  Ka, "movb %B0, %M1" },
@@ -389,6 +388,61 @@ static bits negmask[4] = {
 };
 
 static void
+emitmemoff(Ref ref, int off, E *e)
+{
+	Mem m;
+	Con c;
+
+	switch (rtype(ref)) {
+	case RTmp:
+		assert(isreg(ref));
+		if (off)
+			fprintf(e->f, "%d(%%%s)", off, regtoa(ref.val, SLong));
+		else
+			fprintf(e->f, "(%%%s)", regtoa(ref.val, SLong));
+		break;
+	case RSlot:
+		fprintf(e->f, "%d(%%%s)",
+			slot(ref, e) + off,
+			regtoa(e->fp, SLong));
+		break;
+	case RCon:
+		c = e->fn->con[ref.val];
+		if (off) {
+			Con addend = {.type = CBits, .bits.i = off};
+			addcon(&c, &addend, 1);
+		}
+		emitcon(&c, e);
+		break;
+	case RMem:
+		m = e->fn->mem[ref.val];
+		if (rtype(m.base) == RSlot) {
+			c = (Con){.type = CBits, .bits.i = slot(m.base, e)};
+			addcon(&m.offset, &c, 1);
+			m.base = TMP(e->fp);
+		}
+		if (off) {
+			c = (Con){.type = CBits, .bits.i = off};
+			addcon(&m.offset, &c, 1);
+		}
+		if (m.offset.type != CUndef)
+			emitcon(&m.offset, e);
+		if (!req(m.base, R) || !req(m.index, R)) {
+			fputc('(', e->f);
+			if (!req(m.base, R))
+				fprintf(e->f, "%%%s", regtoa(m.base.val, SLong));
+			if (!req(m.index, R))
+				fprintf(e->f, ", %%%s, %d",
+					regtoa(m.index.val, SLong), m.scale);
+			fputc(')', e->f);
+		}
+		break;
+	default:
+		die("unreachable");
+	}
+}
+
+static void
 emitins(Ins i, E *e)
 {
 	Ref r;
@@ -424,6 +478,50 @@ emitins(Ins i, E *e)
 		/* just do nothing for nops, they are inserted
 		 * by some passes */
 		break;
+	case Ostorel: {
+		/* i386: 64-bit store via paired 32-bit moves. */
+		int soff;
+
+		if (rtype(i.arg[0]) == RCon) {
+			assert(e->fn->con[i.arg[0].val].type == CBits);
+			val = e->fn->con[i.arg[0].val].bits.i;
+			fprintf(e->f, "\tmovl $%d, ",
+				(int32_t)val);
+			emitmemoff(i.arg[1], 0, e);
+			fputc('\n', e->f);
+			fprintf(e->f, "\tmovl $%d, ",
+				(int32_t)(val >> 32));
+			emitmemoff(i.arg[1], 4, e);
+			fputc('\n', e->f);
+		} else if (rtype(i.arg[0]) == RTmp) {
+			/* source is a 32-bit register; store it as
+			 * the low word, zero the high word */
+			assert(isreg(i.arg[0]));
+			fprintf(e->f, "\tmovl %%%s, ",
+				rname[i.arg[0].val][SLong]);
+			emitmemoff(i.arg[1], 0, e);
+			fputc('\n', e->f);
+			fprintf(e->f, "\tmovl $0, ");
+			emitmemoff(i.arg[1], 4, e);
+			fputc('\n', e->f);
+		} else {
+			assert(rtype(i.arg[0]) == RSlot);
+			soff = slot(i.arg[0], e);
+			// low 32 bits
+			fprintf(e->f, "\tpushl %d(%%%s)\n",
+				soff, rname[e->fp][SLong]);
+			fprintf(e->f, "\tpopl ");
+			emitmemoff(i.arg[1], 0, e);
+			fputc('\n', e->f);
+			// high 32 bits
+			fprintf(e->f, "\tpushl %d(%%%s)\n",
+				soff + 4, rname[e->fp][SLong]);
+			fprintf(e->f, "\tpopl ");
+			emitmemoff(i.arg[1], 4, e);
+			fputc('\n', e->f);
+		}
+		break;
+	}
 	case Omul:
 		/* here, we try to use the 3-addresss form
 		 * of multiplication when possible */
