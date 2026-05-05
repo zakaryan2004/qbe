@@ -107,10 +107,10 @@ init() {
 		;;
 	i386)
         for p in i686-linux-musl i686-linux-gnu i386-linux-gnu; do
-            find_cc_and_qemu "i386 i686 x86_64" "$p-gcc -no-pie -static" "qemu-i386"
+            find_cc_and_qemu "i386 i686 x86_64" "$p-gcc -mfpmath=387 -march=i386 -no-pie -static" "qemu-i386"
         done
 
-        find_cc_and_qemu "i386 i686 x86_64" "gcc -m32 -no-pie -static" "qemu-i386"
+        find_cc_and_qemu "i386 i686 x86_64" "gcc -m32 -mfpmath=387 -march=i386 -no-pie -static" "qemu-i386"
 
 		if test -z "$cc" -o -z "$qemu"
 		then
