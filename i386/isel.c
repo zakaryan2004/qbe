@@ -418,6 +418,7 @@ sel(Ins i, Num *tn, Fn *fn)
 			// the emitter handles 64-bit immediats stores directly
 			// without using fixarg on the source, since we
 			// don't have 64-bit registers
+			emiti(i);
 			i1 = curi;
 			fixarg(&i1->arg[1], argcls(&i, 1), i1, fn);
 			break;
