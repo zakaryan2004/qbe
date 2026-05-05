@@ -1,0 +1,39 @@
+export function w $sum_all(w %count, ...) {
+@start
+    # Allocate the va_list pointer (4 bytes on i386)
+    %ap =w alloc4 4
+    vastart %ap
+
+    %sum_0 =w copy 0
+    %i_0 =w copy 0
+    jmp @loop
+
+@loop
+    %i =w phi @start %i_0, @body %i_next
+    %sum =w phi @start %sum_0, @body %sum_next
+    %cond =w csltw %i, %count
+    jnz %cond, @body, @end
+
+@body
+    # Fetch the next argument
+    %val =w vaarg %ap
+    %sum_next =w add %sum, %val
+    %i_next =w add %i, 1
+    jmp @loop
+
+@end
+    ret %sum
+}
+
+# >>> driver
+# #include <stdio.h>
+# extern int sum_all(int, ...);
+# int main() {
+#     printf("Result: %d\n", sum_all(4, 10, 20, 30, 40));
+#     return 0;
+# }
+# <<<
+
+# >>> output
+# Result: 100
+# <<<

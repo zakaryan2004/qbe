@@ -1,0 +1,24 @@
+# Test storel with large constant: 0xDEADBEEF_CAFEBABE
+
+export function $test(w %p) {
+@start
+    storel 16045690984503098046, %p
+    %lo =w loaduw %p
+    %p4 =w add %p, 4
+    %hi =w loaduw %p4
+    storew %lo, $lo_result
+    storew %hi, $hi_result
+    ret
+}
+
+data $buf = { l 0 }
+
+# >>> driver
+# extern void test(void*);
+# int lo_result, hi_result;
+# long long buf;
+# int main() {
+#     test(&buf);
+#     return !(lo_result == (int)0xCAFEBABE && hi_result == (int)0xDEADBEEF);
+# }
+# <<<

@@ -1,0 +1,35 @@
+export function w $sum_mixed(...) {
+@start
+    %ap =w alloc4 4
+    vastart %ap
+    
+    # Read Int (4 bytes)
+    %val1 =w vaarg %ap
+    
+    # Read Double (8 bytes)
+    %val2 =d vaarg %ap
+    
+    # Read Int (4 bytes)
+    %val3 =w vaarg %ap
+    
+    # Do some math: val1 + val3 + (int)val2
+    %sum1 =w add %val1, %val3
+    %val2_int =w dtosi %val2
+    %total =w add %sum1, %val2_int
+    
+    ret %total
+}
+
+# >>> driver
+# #include <stdio.h>
+# extern int sum_mixed(...);
+# int main() {
+#     // Pass: int (10), double (5.5), int (20)
+#     printf("Result: %d\n", sum_mixed(10, 5.5, 20));
+#     return 0;
+# }
+# <<<
+
+# >>> output
+# Result: 35
+# <<<

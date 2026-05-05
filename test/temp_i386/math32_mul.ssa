@@ -1,0 +1,48 @@
+# Test 32-bit multiplication variants on i386.
+
+export function w $test_mul(w %a, w %b) {
+@start
+    %r =w mul %a, %b
+    ret %r
+}
+
+export function w $test_neg(w %a) {
+@start
+    %r =w neg %a
+    ret %r
+}
+
+export function w $test_udiv(w %a, w %b) {
+@start
+    %r =w udiv %a, %b
+    ret %r
+}
+
+export function w $test_urem(w %a, w %b) {
+@start
+    %r =w urem %a, %b
+    ret %r
+}
+
+# >>> driver
+# #include <stdio.h>
+# extern int test_mul(int, int);
+# extern int test_neg(int);
+# extern unsigned test_udiv(unsigned, unsigned);
+# extern unsigned test_urem(unsigned, unsigned);
+# int main() {
+#     int ok = 1;
+#     ok = ok && (test_mul(123, 456) == 56088);
+#     ok = ok && (test_mul(-7, 8) == -56);
+#     ok = ok && (test_neg(42) == -42);
+#     ok = ok && (test_neg(-1) == 1);
+#     ok = ok && (test_udiv(100, 7) == 14);
+#     ok = ok && (test_urem(100, 7) == 2);
+#     printf("ok=%d\n", ok);
+#     return !ok;
+# }
+# <<<
+
+# >>> output
+# ok=1
+# <<<

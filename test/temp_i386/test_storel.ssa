@@ -1,0 +1,39 @@
+# Test storel: store a 64-bit constant to a global,
+# verify both 32-bit halves via pointer reads.
+# The store target is passed through a function argument
+# to prevent the optimizer from folding everything away.
+
+data $buf = { l 0 }
+
+function $do_store(w %p) {
+@start
+    # Store 0x00000001_00000002 = 4294967298
+    storel 4294967298, %p
+    ret
+}
+
+export
+function $test() {
+@start
+    %p =w copy $buf
+    call $do_store(w %p)
+
+    # Read low 32 bits (should be 2)
+    %lo =w loaduw %p
+    storew %lo, $lo_result
+
+    # Read high 32 bits (should be 1)
+    %p4 =w add %p, 4
+    %hi =w loaduw %p4
+    storew %hi, $hi_result
+    ret
+}
+
+# >>> driver
+# extern void test(void);
+# int lo_result, hi_result;
+# int main() {
+#   test();
+#   return !(lo_result == 2 && hi_result == 1);
+# }
+# <<<

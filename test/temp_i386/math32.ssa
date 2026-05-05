@@ -1,0 +1,72 @@
+# Test 32-bit arithmetic: div, rem, shifts, logical ops.
+
+export function w $test_sar(w %x, w %n) {
+@start
+    %r =w sar %x, %n
+    ret %r
+}
+
+export function w $test_div(w %a, w %b) {
+@start
+    %r =w div %a, %b
+    ret %r
+}
+
+export function w $test_rem(w %a, w %b) {
+@start
+    %r =w rem %a, %b
+    ret %r
+}
+
+export function w $test_shl(w %a, w %b) {
+@start
+    %r =w shl %a, %b
+    ret %r
+}
+
+export function w $test_shr(w %a, w %b) {
+@start
+    %r =w shr %a, %b
+    ret %r
+}
+
+export function w $test_and(w %a, w %b) {
+@start
+    %r =w and %a, %b
+    ret %r
+}
+
+export function w $test_or(w %a, w %b) {
+@start
+    %r =w or %a, %b
+    ret %r
+}
+
+export function w $test_xor(w %a, w %b) {
+@start
+    %r =w xor %a, %b
+    ret %r
+}
+
+# >>> driver
+# extern int test_sar(int, int);
+# extern int test_div(int, int);
+# extern int test_rem(int, int);
+# extern int test_shl(int, int);
+# extern unsigned test_shr(unsigned, int);
+# extern int test_and(int, int);
+# extern int test_or(int, int);
+# extern int test_xor(int, int);
+# int main() {
+#     int ok = 1;
+#     ok = ok && (test_sar(-80, 3) == -10);
+#     ok = ok && (test_div(100, 7) == 14);
+#     ok = ok && (test_rem(100, 7) == 2);
+#     ok = ok && (test_shl(1, 10) == 1024);
+#     ok = ok && (test_shr(0x80000000u, 1) == 0x40000000);
+#     ok = ok && (test_and(0xFF00, 0x0FF0) == 0x0F00);
+#     ok = ok && (test_or(0xFF00, 0x00FF) == 0xFFFF);
+#     ok = ok && (test_xor(0xAAAA, 0x5555) == 0xFFFF);
+#     return !ok;
+# }
+# <<<
