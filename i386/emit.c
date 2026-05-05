@@ -185,7 +185,7 @@ emitcon(Con *con, E *e)
 			if (T.apple)
 				fprintf(e->f, "%s%s@TLVP", p, l);
 			else
-				fprintf(e->f, "%%fs:%s%s@tpoff", p, l);
+				fprintf(e->f, "%%gs:%s%s@ntpoff", p, l);
 		} else
 			fprintf(e->f, "%s%s", p, l);
 		if (con->bits.i)
@@ -619,12 +619,12 @@ emitins(Ins i, E *e)
 		&& rtype(i.arg[0]) == RCon
 		&& e->fn->con[i.arg[0].val].sym.type == SThr) {
 			/* derive the symbol address from the TCB
-			 * address at offset 0 of %fs */
+			 * address at offset 0 of %gs */
 			assert(isreg(i.to));
 			con = &e->fn->con[i.arg[0].val];
 			sym = str(con->sym.id);
-			emitf("movl %%fs:0, %L=", &i, e);
-			fprintf(e->f, "\tleaq %s%s@tpoff",
+			emitf("movl %%gs:0, %L=", &i, e);
+			fprintf(e->f, "\tleal %s%s@ntpoff",
 				sym[0] == '"' ? "" : T.assym, sym);
 			if (con->bits.i)
 				fprintf(e->f, "%+"PRId64,
