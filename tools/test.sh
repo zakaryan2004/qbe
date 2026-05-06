@@ -291,6 +291,9 @@ case "$1" in
 "i386")
 	all $dir/../test/temp_i386
 	;;
+"32bit")
+	all $dir/../test/test_32bit
+	;;
 *)
 	once $1
 	exit $?

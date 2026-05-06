@@ -1,0 +1,27 @@
+# checks that phi arguments are correctly
+# handled in alias analysis
+
+export
+function w $f(w %cond) {
+@start
+        %x =w alloc4 4
+        %y =w alloc4 4
+        storew 0, %x
+        jnz %cond, @true, @false
+@true
+        jmp @end
+@false
+        jmp @end
+@end
+        %ptr =w phi @true %x, @false %y
+        storew 1, %ptr
+        %result =w loadsw %x
+        ret %result
+}
+
+# >>> driver
+# extern int f(int);
+# int main() {
+# 	return !(f(0) == 0 && f(1) == 1);
+# }
+# <<<

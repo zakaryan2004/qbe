@@ -1,0 +1,64 @@
+# amd64 address-folding stress
+
+export function w $f0(w %a, w %b) {
+@start
+	%c =w add %b, 2
+	%d =w mul %c, 4
+	%e =w add %a, %d
+	%q =w loadw %e
+	ret %q
+}
+
+export function w $f1(w %a, w %b) {
+@start
+	%c =w add 1, %b
+	%f =w add %c, 1
+	%d =w mul %f, 4
+	%e =w add %d, %a
+	%q =w loadw %e
+	ret %q
+}
+
+export function w $f2(w %a, w %b) {
+@start
+	%l =w mul %b, 4
+	%d =w add 8, %l
+	%e =w add %a, %d
+	%q =w loadw %e
+	ret %q
+}
+
+# fixme: folding is not good here
+export function w $f3(w %a, w %b) {
+@start
+	%l =w mul %b, 4
+	%d =w add 4, %l
+	%f =w add 4, %d
+	%e =w add %a, %f
+	%q =w loadw %e
+	ret %q
+}
+
+export function w $f4(w %a, w %b) {
+@start
+	%c =w add 1, %b
+	%d =w mul %c, 4
+	%e =w add 4, %d
+	%f =w add %e, %a
+	%q =w loadw %f
+	ret %q
+}
+
+# >>> driver
+# int a[] = {1, 2, 3, 4};
+# typedef int loadf(int *, int);
+# extern loadf f0, f1, f2, f3, f4;
+# loadf *fns[] = {&f0, &f1, &f2, &f3, &f4, 0};
+# int main() {
+# 	loadf **f;
+# 	int n;
+# 	for (n=1,f=fns; *f; f++,n++)
+# 		if ((*f)(a, 1) != 4) return n;
+# 	return 0;
+# }
+# <<<
